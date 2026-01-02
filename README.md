@@ -108,7 +108,8 @@ https://python.langchain.com/docs/integrations/chat/ollama/
 **Exercice 8 : evaluation**
 
 
-- Suivre le cours [COURS_MULTI_AGENTS_DATA.md](./multi_agent_data/COURS_MULTI_AGENTS_DATA.md) (ressource utile : [https://www.deeplearning.ai/short-courses/building-evaluating-advanced-rag/](https://www.deeplearning.ai/short-courses/building-evaluating-advanced-rag/))
+- Suivre le cours [https://www.deeplearning.ai/short-courses/building-evaluating-advanced-rag/](https://www.deeplearning.ai/short-courses/building-evaluating-advanced-rag/))
+    - Support de cours [COURS_MULTI_AGENTS_DATA.md](./multi_agent_data/COURS_MULTI_AGENTS_DATA.md) 
 - Modifier le notebook [L6](./multi_agent_data/notebooks/L6/L6.ipynb) en le transformant pour une exécution locale sur Google Colab en utilisant [OpenRouter](https://openrouter.ai/) et un petit LLM (e.g. nano). **Clé API à demander** et stabiliser avec les évaluation
 
 
