@@ -19,14 +19,15 @@ from pydantic import BaseModel, Field
 # LangChain imports
 from langchain_core.tools import tool
 from langchain_experimental.utilities import PythonREPL
-from langchain.schema import HumanMessage
+from langchain_core.messages import HumanMessage
 from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
-from langchain.retrievers import ParentDocumentRetriever
-from langchain.storage import InMemoryStore
+from langchain_core.stores import InMemoryStore
+from langchain_core.documents import Document
 from langchain_community.document_loaders import PyPDFDirectoryLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+import uuid
 
 # LangGraph imports
 from langgraph.graph import MessagesState, START, StateGraph, END
@@ -38,7 +39,7 @@ from trulens.core.otel.instrument import instrument
 from trulens.otel.semconv.trace import SpanAttributes
 from trulens.core import Feedback
 from trulens.core.feedback.selector import Selector
-from trulens.providers.litellm import LiteLLM
+from trulens_providers.litellm import LiteLLM
 
 warnings.filterwarnings("ignore")
 
@@ -151,8 +152,34 @@ def initialize_vectorstore():
 vectorstore = initialize_vectorstore()
 
 # ============================================================================
-# HIERARCHICAL INDEXING - ParentDocumentRetriever
+# HIERARCHICAL INDEXING - Manual Implementation (LangChain 1.x compatible)
 # ============================================================================
+
+class HierarchicalRetriever:
+    """
+    Custom hierarchical retriever that searches on small chunks but returns parent documents
+    Compatible with LangChain 1.x without deprecated retrievers
+    """
+    def __init__(self, child_vectorstore, parent_store):
+        self.child_vectorstore = child_vectorstore
+        self.parent_store = parent_store
+    
+    def get_relevant_documents(self, query: str, k: int = 4):
+        """Search using child chunks, return parent documents"""
+        # Search in child chunks
+        child_docs = self.child_vectorstore.similarity_search(query, k=k)
+        
+        # Get unique parent doc IDs
+        parent_ids = list(set([doc.metadata.get("doc_id") for doc in child_docs if "doc_id" in doc.metadata]))
+        
+        # Retrieve parent documents from store
+        parent_docs = []
+        for doc_id in parent_ids:
+            parent_doc = self.parent_store.mget([doc_id])[0]
+            if parent_doc:
+                parent_docs.append(parent_doc)
+        
+        return parent_docs
 
 def create_parent_document_retriever(
     child_chunk_size: int = 400,
@@ -190,18 +217,25 @@ def create_parent_document_retriever(
     # Create parent document store
     parent_store = InMemoryStore()
     
-    # Create parent document retriever
-    retriever = ParentDocumentRetriever(
-        vectorstore=child_vectorstore,
-        docstore=parent_store,
-        child_splitter=child_splitter,
-        parent_splitter=parent_splitter,
-    )
+    # Split documents into parent chunks
+    parent_docs = parent_splitter.split_documents(documents)
     
-    # Add documents
-    retriever.add_documents(documents)
+    # Generate IDs for parent docs and split into children
+    doc_ids = [str(uuid.uuid4()) for _ in parent_docs]
+    child_docs = []
+    for i, parent_doc in enumerate(parent_docs):
+        # Split parent into children
+        _sub_docs = child_splitter.split_documents([parent_doc])
+        for _doc in _sub_docs:
+            _doc.metadata["doc_id"] = doc_ids[i]
+        child_docs.extend(_sub_docs)
     
-    return retriever
+    # Add child docs to vectorstore and parent docs to docstore
+    child_vectorstore.add_documents(child_docs)
+    parent_store.mset(list(zip(doc_ids, parent_docs)))
+    
+    # Return custom retriever
+    return HierarchicalRetriever(child_vectorstore, parent_store)
 
 # Initialize both retrievers for comparison
 print("Initializing hierarchical retriever...")
