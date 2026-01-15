@@ -1,24 +1,28 @@
-# Core dependencies
-langchain==0.3.16
-langchain-community==0.3.16
-langchain-huggingface==0.1.2
-langchain-chroma==0.1.4
+# Core dependencies - versions compatibles
+langchain>=0.3.0,<0.4.0
+langchain-community>=0.3.0,<0.4.0
+langchain-core>=0.3.0,<0.4.0
+langchain-huggingface>=0.1.0,<0.2.0
+langchain-chroma>=0.1.0,<0.2.0
 
 # Ollama integration
-langchain-ollama==0.2.0
+langchain-ollama>=0.2.0
 
 # Vector store
-chromadb==0.5.23
+chromadb>=0.5.0,<0.6.0
 
 # PDF processing
-pypdf==5.1.0
-pymupdf==1.25.4
+pypdf>=5.0.0
 
 # Embeddings
-sentence-transformers==3.3.1
+sentence-transformers>=3.0.0,<4.0.0
 
 # UI
-gradio==5.12.0
+gradio>=5.0.0
 
 # Utilities
-python-dotenv==1.0.1
+python-dotenv>=1.0.0
+
+# Dépendances compatibles pour éviter les conflits
+numpy>=1.26.0,<2.0.0
+pydantic>=2.0.0,<3.0.0
