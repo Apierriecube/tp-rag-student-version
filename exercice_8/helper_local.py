@@ -39,7 +39,7 @@ from trulens.core.otel.instrument import instrument
 from trulens.otel.semconv.trace import SpanAttributes
 from trulens.core import Feedback
 from trulens.core.feedback.selector import Selector
-from trulens_providers.litellm import LiteLLM
+from trulens.providers.litellm import LiteLLM
 
 warnings.filterwarnings("ignore")
 
@@ -238,11 +238,10 @@ def create_parent_document_retriever(
     return HierarchicalRetriever(child_vectorstore, parent_store)
 
 # Initialize both retrievers for comparison
-print("Initializing hierarchical retriever...")
-parent_retriever = create_parent_document_retriever(
-    child_chunk_size=400,
-    parent_chunk_size=2000
-)
+# NOTE: Hierarchical retriever disabled for performance (too slow with many PDFs)
+# Use standard retriever instead for faster initialization
+print("Using standard retriever (hierarchical disabled for performance)")
+parent_retriever = None  # Disabled - reloads all PDFs each time
 
 # Standard retriever from vectorstore
 standard_retriever = vectorstore.as_retriever(
@@ -255,20 +254,20 @@ standard_retriever = vectorstore.as_retriever(
 # ============================================================================
 
 @tool
-def local_rag_search(query: str, use_hierarchical: bool = True) -> str:
+def local_rag_search(query: str, use_hierarchical: bool = False) -> str:
     """
     Search local document database using RAG.
     
     Args:
         query: The search query
-        use_hierarchical: Whether to use hierarchical retrieval (default: True)
+        use_hierarchical: Whether to use hierarchical retrieval (default: False - disabled for performance)
     
     Returns:
         Formatted search results with sources
     """
     try:
-        # Choose retriever
-        retriever = parent_retriever if use_hierarchical else standard_retriever
+        # Choose retriever (parent_retriever disabled, always use standard)
+        retriever = standard_retriever  # Always use standard for performance
         
         # Retrieve documents
         docs = retriever.get_relevant_documents(query)
@@ -332,7 +331,7 @@ def initialize_duckdb():
         print("Sample sales data inserted into DuckDB")
     
     con.close()
-    return DUCKDB_PATH
+    return DB_PATH
 
 # Initialize DuckDB
 initialize_duckdb()
@@ -676,11 +675,59 @@ def synthesizer_node(state: State) -> Command[Literal[END]]:
 # EVALUATIONS - TruLens RAG Triad + GPA
 # ============================================================================
 
-# Use Groq for evaluations (FREE!)
+# TEMPORARILY DISABLED due to LiteLLM compatibility issues with TruLens
+# You can enable evaluations later by uncommenting and fixing the compatibility issue
+
+print("⚠️  TruLens evaluations temporarily disabled due to compatibility issues")
+print("   System will work without evaluations for now")
+
+# Create dummy provider and feedbacks to avoid import errors
+class DummyProvider:
+    """Dummy provider when TruLens can't initialize"""
+    def groundedness_measure_with_cot_reasons(self, *args, **kwargs):
+        return 0.0
+    def relevance_with_cot_reasons(self, *args, **kwargs):
+        return 0.0
+    def context_relevance_with_cot_reasons(self, *args, **kwargs):
+        return 0.0
+    def logical_consistency_with_cot_reasons(self, *args, **kwargs):
+        return 0.0
+    def execution_efficiency_with_cot_reasons(self, *args, **kwargs):
+        return 0.0
+    def plan_adherence_with_cot_reasons(self, *args, **kwargs):
+        return 0.0
+    def plan_quality_with_cot_reasons(self, *args, **kwargs):
+        return 0.0
+
+eval_provider = DummyProvider()
+gpa_provider = eval_provider
+
+# Create dummy feedback objects
+class DummyFeedback:
+    def __init__(self, *args, **kwargs):
+        self.name = kwargs.get('name', 'Dummy')
+    def on(self, *args, **kwargs):
+        return self
+    def on_input(self):
+        return self
+    def on_output(self):
+        return self
+    def aggregate(self, *args):
+        return self
+
+f_groundedness = DummyFeedback(name="Groundedness")
+f_answer_relevance = DummyFeedback(name="Answer Relevance")
+f_context_relevance = DummyFeedback(name="Context Relevance")
+f_logical_consistency = DummyFeedback(name="Logical Consistency")
+f_execution_efficiency = DummyFeedback(name="Execution Efficiency")
+f_plan_adherence = DummyFeedback(name="Plan Adherence")
+f_plan_quality = DummyFeedback(name="Plan Quality")
+
+"""
+# Use Groq for evaluations
 eval_provider = LiteLLM(model_engine="groq/llama-3.1-8b-instant")
 
 # RAG Triad Evaluations
-
 f_groundedness = (
     Feedback(
         eval_provider.groundedness_measure_with_cot_reasons,
@@ -728,7 +775,8 @@ f_context_relevance = (
 
 # GPA Evaluations
 
-gpa_provider = LiteLLM(model_engine="groq/llama-3.1-8b-instant")
+# Reuse eval_provider instead of creating a new one
+gpa_provider = eval_provider
 
 f_logical_consistency = Feedback(
     gpa_provider.logical_consistency_with_cot_reasons,
@@ -757,6 +805,7 @@ f_plan_quality = Feedback(
 ).on({
     "trace": Selector(trace_level=True),
 })
+"""
 
 # ============================================================================
 # UTILITY FUNCTIONS

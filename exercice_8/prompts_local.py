@@ -3,7 +3,7 @@ Prompts for Local RAG + DuckDB Multi-Agent System
 Modified from L6 to support local agents
 """
 from typing import Dict, Any, List, Optional
-from langchain.schema import HumanMessage
+from langchain_core.messages import HumanMessage
 import json
 from langgraph.graph import MessagesState
 
