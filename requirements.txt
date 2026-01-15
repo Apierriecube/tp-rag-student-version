@@ -1,3 +1,7 @@
+# Dépendances critiques (versions exactes pour compatibilité)
+numpy==1.26.4
+sentence-transformers==2.7.0
+
 # Core dependencies - versions compatibles
 langchain>=0.3.0,<0.4.0
 langchain-community>=0.3.0,<0.4.0
@@ -14,15 +18,9 @@ chromadb>=0.5.0,<0.6.0
 # PDF processing
 pypdf>=5.0.0
 
-# Embeddings (version 2.x compatible avec numpy 1.x)
-sentence-transformers>=2.2.0,<3.0.0
-
 # UI
 gradio>=5.0.0
 
 # Utilities
 python-dotenv>=1.0.0
-
-# Dépendances compatibles pour éviter les conflits
-numpy>=1.26.0,<2.0.0
 pydantic>=2.0.0,<3.0.0
