@@ -6,8 +6,7 @@ langgraph>=0.0.40
 langchain-experimental>=0.0.50
 
 # LLM Providers
-langchain-groq>=0.0.1
-# langchain-openai>=0.0.5  # Non nécessaire - on utilise Groq!
+langchain-openai>=0.0.5
 
 # Embeddings
 langchain-huggingface>=0.0.1

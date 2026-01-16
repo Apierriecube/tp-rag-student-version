@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 from langchain_core.tools import tool
 from langchain_experimental.utilities import PythonREPL
 from langchain_core.messages import HumanMessage
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.stores import InMemoryStore
@@ -91,20 +91,32 @@ MAX_REPLANS = 2
 from prompts_local import plan_prompt, executor_prompt, agent_system_prompt
 
 # ============================================================================
-# LLM INITIALIZATION - GROQ with llama-3.1-8b-instant
+# LLM INITIALIZATION - OpenRouter with meta-llama/llama-3.1-8b-instruct:free
 # ============================================================================
 
-# Groq for general tasks (fast and free)
-llm = ChatGroq(
-    model="llama-3.1-8b-instant",
+# OpenRouter for general tasks (using free tier)
+llm = ChatOpenAI(
+    model="meta-llama/llama-3.1-8b-instruct:free",
     temperature=0,
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+    default_headers={
+        "HTTP-Referer": "https://github.com/your-repo",  # Optional
+        "X-Title": "RAG Multi-Agent System",  # Optional
+    }
 )
 
-# Groq for reasoning/planning (can use larger model if needed)
-reasoning_llm = ChatGroq(
-    model="llama-3.1-8b-instant",
+# OpenRouter for reasoning/planning
+reasoning_llm = ChatOpenAI(
+    model="meta-llama/llama-3.1-8b-instruct:free",
     temperature=0,
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("OPENROUTER_API_KEY"),
     model_kwargs={"response_format": {"type": "json_object"}},
+    default_headers={
+        "HTTP-Referer": "https://github.com/your-repo",
+        "X-Title": "RAG Multi-Agent System",
+    }
 )
 
 # ============================================================================
@@ -724,8 +736,8 @@ f_plan_adherence = DummyFeedback(name="Plan Adherence")
 f_plan_quality = DummyFeedback(name="Plan Quality")
 
 """
-# Use Groq for evaluations
-eval_provider = LiteLLM(model_engine="groq/llama-3.1-8b-instant")
+# Use OpenRouter for evaluations
+eval_provider = LiteLLM(model_engine="openrouter/meta-llama/llama-3.1-8b-instruct:free")
 
 # RAG Triad Evaluations
 f_groundedness = (
@@ -821,7 +833,7 @@ def display_eval_reason(text, width=800):
     display(HTML(f'<div style="font-size: 15px; word-wrap: break-word; width: {width}px;">{html_text}</div>'))
 
 print("✓ Helper module loaded successfully!")
-print("✓ Using Groq with llama-3.1-8b-instant")
+print("✓ Using OpenRouter with meta-llama/llama-3.1-8b-instruct:free")
 print("✓ Local RAG with hierarchical indexing initialized")
 print("✓ DuckDB with sample sales data ready")
 print("✓ TruLens evaluations configured")
